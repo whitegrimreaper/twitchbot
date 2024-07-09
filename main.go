@@ -6,33 +6,33 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
 	"github.com/joho/godotenv"
 
 	twitch "github.com/gempir/go-twitch-irc/v4"
 )
 
-func init() { 
+func init() {
 	if err := godotenv.Load(); err != nil {
-			fmt.Printf("No .env file found\n")
-		} 
+		fmt.Printf("No .env file found\n")
 	}
+}
 
 func main() {
 	authToken := os.Getenv("AUTH_TOKEN")
-	if authToken == "" { 
+	if authToken == "" {
 		fmt.Printf("AUTH_TOKEN not set\n")
-		os.Exit(0);
-	} 
+		os.Exit(0)
+	}
 	fmt.Printf("AUTH_TOKEN is set to %s\n", authToken)
 
 	// Twitch bot configuration
 	botUsername := "whitescancerbot"
-	oauthToken := "" // Get from https://twitchapps.com/tmi/
 	channel := "whitegrimreaper_"
 
 	// Create a new Twitch IRC client
 	fmt.Printf("INITIALIZING BOT\n")
-	client := twitch.NewClient(botUsername, oauthToken)
+	client := twitch.NewClient(botUsername, authToken)
 	client.Join(channel)
 
 	// Event handler for incoming messages
@@ -47,7 +47,7 @@ func main() {
 				fmt.Printf("Extracted command %s\n", args[0])
 				response, err2 := handleCommand(args, message)
 				fmt.Printf("Should respond: '%s'\n", response)
-				if err2 == nil && response != ""{
+				if err2 == nil && response != "" {
 					client.Say(channel, response)
 				}
 			}
