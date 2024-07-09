@@ -1,6 +1,6 @@
 This is a bot for my twitch channel
 
-https://twitch.tv/whitegrimreaper_
+[whitegrimreaper_](https://twitch.tv/whitegrimreaper_)
 
 Using Golang because I'm a back-end engineer and as such I hate JS as much as it deserves.
 
