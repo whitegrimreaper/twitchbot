@@ -15,6 +15,12 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 	case commandName == checkPoints:
 		// check user's current points
 		ret = ""
+	case commandName == addKills:
+		// allow user to spend points to add kills to the queue
+		ret = ""
+	case commandName == checkKills:
+		// allow user to check how many kills they have left in the current queue
+		ret = ""
 	}
 	return ret, nil
 }

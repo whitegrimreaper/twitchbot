@@ -25,13 +25,14 @@ func main() {
 		os.Exit(0)
 	}
 	fmt.Printf("AUTH_TOKEN is set to %s\n", authToken)
+	go startTwitchEventListener()
 
 	// Twitch bot configuration
 	botUsername := "whitescancerbot"
 	channel := "whitegrimreaper_"
 
 	// Create a new Twitch IRC client
-	fmt.Printf("INITIALIZING BOT\n")
+	fmt.Printf("Initializing Bot\n")
 	client := twitch.NewClient(botUsername, authToken)
 	client.Join(channel)
 
@@ -56,6 +57,9 @@ func main() {
 
 	// Connect to Twitch IRC
 	err := client.Connect()
+	// always hangs here, never gets to the following code
+	// i think client.Connect() should be called in an asynch manner from a
+	// separate goroutine but that's a future improvement since we don't care atm
 	if err != nil {
 		fmt.Printf("Error connecting to Twitch IRC: %v\n", err)
 		return
@@ -74,10 +78,6 @@ func main() {
 
 func extractArgs(message twitch.PrivateMessage) (args []string, err error) {
 	ret := strings.Fields(message.Message)
-	//for i := 0; i < len(ret); i++ {
-	//	fmt.Printf("%s,", ret[i])
-	//}
-	//fmt.Printf("\n")
 	return ret, nil
 }
 
