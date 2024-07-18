@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"time"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/nicklaw5/helix/v2"
 
 	twitch "github.com/gempir/go-twitch-irc/v4"
 )
@@ -20,15 +22,52 @@ func init() {
 
 func main() {
 	authToken := os.Getenv("AUTH_TOKEN")
-	if authToken == "" {
-		fmt.Printf("AUTH_TOKEN not set\n")
-		os.Exit(0)
-	}
+	clientId := os.Getenv("APP_CLIENT_ID")
+	clientSecret := os.Getenv("APP_CLIENT_SECRET")
+	accessToken := os.Getenv("ACCESS_TOKEN_FINAL")
+	validateEnvVars([]string{authToken, clientId, clientSecret, accessToken})
 	fmt.Printf("AUTH_TOKEN is set to %s\n", authToken)
-	go startTwitchEventListener()
+
+	helixClient, err := helixInit(clientId, clientSecret, accessToken)
+	if err != nil {
+		panic(err)
+	}
+	createEventSubSubscriptions(helixClient)
+
+	resp, err := helixClient.GetUsers(&helix.UsersParams{
+		Logins: []string{"whitegrimreaper_"},
+	})
+	if err != nil {
+		panic(err)
+	}
+	
+	fmt.Printf("Status code: %d\n", resp.StatusCode)
+	fmt.Printf("Message: %s\n", resp.ErrorMessage)
+	fmt.Printf("Rate limit: %d\n", resp.GetRateLimit())
+	fmt.Printf("Rate limit remaining: %d\n", resp.GetRateLimitRemaining())
+	fmt.Printf("Rate limit reset: %d\n\n", resp.GetRateLimitReset())
+	
+	for _, user := range resp.Data.Users {
+		fmt.Printf("ID: %s Name: %s\n", user.ID, user.DisplayName)
+	}
+
+	// TODO currently I create new listeners every time the bot is run, so I'm at 13 subscriptions as of the writing of this
+	// should really remove them here
+
+	//go startTwitchEventListener()
+	go startTwitchListeners()
+
+	time.Sleep(3*time.Second)
+	// leaving this in as a reminder to check eventsub subs at some point
+	/*eventSubResp, err := helixClient.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{
+		Status: helix.EventSubStatusEnabled, // This is optional.
+	})
+	if err != nil {
+		panic(err)
+	}*/
 
 	// Twitch bot configuration
-	botUsername := "whitescancerbot"
+	botUsername := "whitegrimbot"
 	channel := "whitegrimreaper_"
 
 	// Create a new Twitch IRC client
@@ -56,11 +95,11 @@ func main() {
 	})
 
 	// Connect to Twitch IRC
-	err := client.Connect()
+	conErr := client.Connect()
 	// always hangs here, never gets to the following code
 	// i think client.Connect() should be called in an asynch manner from a
 	// separate goroutine but that's a future improvement since we don't care atm
-	if err != nil {
+	if conErr != nil {
 		fmt.Printf("Error connecting to Twitch IRC: %v\n", err)
 		return
 	}

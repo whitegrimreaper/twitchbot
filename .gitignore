@@ -23,3 +23,6 @@ go.work.sum
 
 #yaml too i guess
 *.yaml
+
+#i'm using this for notes that contain tokens/secrets
+*.ignr

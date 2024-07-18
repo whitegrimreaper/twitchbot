@@ -2,6 +2,9 @@ package main
 // This code is not verified yet, don't have callback enabled from twitch API
 // but it's still here so i can deploy onto gcloud and get the callback url from there
 
+// NOTE: PROBABLY GONNA TRASH THIS SINCE THE HELIX THING WORKS AND IS MUCH EASIER TO INTERACT WITH
+// LATER NOTE: DEF TRASHING THIS BUT SAVING IT FOR LATER SO MY GIT HISTORY LOOKS NICER
+
 import (
 	"os"
 	"crypto/hmac"
@@ -9,6 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"bytes"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,6 +24,14 @@ import (
 type EventSubNotification struct {
 	Subscription  Subscription       `json:"subscription"`
 	Event         json.RawMessage    `json:"event"`
+}
+
+type TwitchEventSubscription struct {
+	Type    string          `json:"type"`
+	Version string          `json:"version"`
+	Condition struct {
+		BroadcasterUserId string `json:"broadcaster_user_id"`
+	} `json:"condition"`
 }
 
 // Subscription details
@@ -37,6 +49,43 @@ type Subscription struct {
 		Secret   string `json:"secret"`
 	} `json:"transport"`
 	CreatedAt string `json:"created_at"`
+}
+
+func subscribeToFollowEvents() {
+	// Example subscription payload for follows to a specific broadcaster (replace with your broadcaster id)
+	subscription := TwitchEventSubscription{
+		Type:    "channel.follow",
+		Version: "1",
+		Condition: struct {
+			BroadcasterUserId string `json:"broadcaster_user_id"`
+		}{
+			BroadcasterUserId: "123456789", // Replace with your broadcaster id
+		},
+	}
+
+	// Convert subscription to JSON
+	payload, err := json.Marshal(subscription)
+	if err != nil {
+		log.Fatalf("Error marshalling subscription payload: %v", err)
+	}
+
+	// Make HTTP request to Twitch API to create subscription
+	req, err := http.NewRequest("POST", "https://api.twitch.tv/helix/eventsub/subscriptions", bytes.NewBuffer(payload))
+	if err != nil {
+		log.Fatalf("Error creating HTTP request: %v", err)
+	}
+	req.Header.Set("Client-ID", "YOUR_TWITCH_CLIENT_ID") // Replace with your Twitch Client ID
+	req.Header.Set("Authorization", "Bearer YOUR_TWITCH_ACCESS_TOKEN") // Replace with your Twitch OAuth token
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Error making HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	log.Printf("Subscription response: %v", resp.Status)
 }
 
 // Handle incoming Twitch EventSub notifications
