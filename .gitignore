@@ -21,6 +21,9 @@ go.work.sum
 # env file
 .env
 
+# db doesn't need to be saved
+*.db
+
 #yaml too i guess
 *.yaml
 

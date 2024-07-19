@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"os"
 	"net/http"
 	"encoding/json"
@@ -149,6 +150,19 @@ func eventSubHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {fmt.Printf("")}
 		fmt.Printf("Got Sub event!\n")
 		fmt.Printf("%s subbed to %s, and was it gift? %t\n", subEvent.UserName, subEvent.BroadcasterUserName, subEvent.IsGift)
+		idInt, err := strconv.Atoi(subEvent.UserID)
+		if err != nil {
+			panic(err)
+		}
+		respCode, respMessage, exists := doesUserExist(idInt)
+		if !respCode || respMessage != "" {
+			fmt.Printf("")
+		}
+		fmt.Printf("Does user exist? %t\n", exists)
+		respCode, respMessage = writePointGainEvent(idInt, 100)
+		if !respCode || respMessage != "" {
+			fmt.Printf("")
+		}
 	case helix.EventSubTypeChannelCheer:
 		var cheerEvent helix.EventSubChannelCheerEvent
 		err = json.NewDecoder(bytes.NewReader(vals.Event)).Decode(&cheerEvent)

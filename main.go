@@ -10,9 +10,13 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/nicklaw5/helix/v2"
+	"gorm.io/gorm"
+	//"gorm.io/driver/sqlite"
 
 	twitch "github.com/gempir/go-twitch-irc/v4"
 )
+
+var Db *gorm.DB
 
 func init() {
 	if err := godotenv.Load(); err != nil {
@@ -27,6 +31,8 @@ func main() {
 	accessToken := os.Getenv("ACCESS_TOKEN_FINAL")
 	validateEnvVars([]string{authToken, clientId, clientSecret, accessToken})
 	fmt.Printf("AUTH_TOKEN is set to %s\n", authToken)
+
+	Db = dbinit()
 
 	helixClient, err := helixInit(clientId, clientSecret, accessToken)
 	if err != nil {
