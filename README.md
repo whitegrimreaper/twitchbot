@@ -23,4 +23,10 @@ Using Golang because I'm a back-end engineer and as such I hate JS as much as it
  - checking and controlling points gained from the above
  - spending those points to add activities to the subathon queue
  - Data storage using gorm and sqlite
-    - using gorm means I can scale out of sqlite if i need to 
+    - using gorm means I can scale out of sqlite if i need to
+
+## Planned Functionality (including other packages)
+ - webhosted interface for checking points and queue
+ - CLI for manually modifying DB (in case of bugs or moderator action)
+ - Streamdeck integration for ticking off kills?
+   - I need a good way of removing kills from the queue during stream
