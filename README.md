@@ -4,6 +4,12 @@ This is a bot for my twitch channel
 
 Using Golang because I'm a back-end engineer and as such I hate JS as much as it deserves.
 
+## Requirements:
+(note that this is not intended to be used by anyone else yet as it is nowhere near feature complete)
+ - A bot account with moderator privileges
+ - SQLite
+ - vague knowledge of how to use commandline
+
 ## Current functions:
  - !pigeon
     - Insults pigeonmob
