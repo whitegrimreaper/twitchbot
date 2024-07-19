@@ -16,7 +16,8 @@ import (
 	twitch "github.com/gempir/go-twitch-irc/v4"
 )
 
-var Db *gorm.DB
+var BossDB *gorm.DB
+var PointsDB *gorm.DB
 
 func init() {
 	if err := godotenv.Load(); err != nil {
@@ -32,7 +33,8 @@ func main() {
 	validateEnvVars([]string{authToken, clientId, clientSecret, accessToken})
 	fmt.Printf("AUTH_TOKEN is set to %s\n", authToken)
 
-	Db = dbinit()
+	PointsDB = pointsDBInit()
+	BossDB = bossDBInit()
 
 	helixClient, err := helixInit(clientId, clientSecret, accessToken)
 	if err != nil {
