@@ -6,6 +6,8 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"gorm.io/driver/sqlite"
+
+	"github.com/lib/pq"
 )
 
 // Table of all users, contains users and the points they have
@@ -34,6 +36,8 @@ type UserBossRequest struct {
 }
 
 // Table of all bosses, one entry per boss
+// BossName is the most common name
+// Other nicknames can be saved in BossNicknames table
 // Shows the current 'queue' of boss kills
 // Kills left -> kills left in queue to do
 // kills done -> tracking progress over the whole event
@@ -47,6 +51,18 @@ type BossEntry struct {
 	BossCost      int
 	BossKillsLeft int
 	BossKillsDone int
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// Bosses may have many nicknames
+// They don't change a ton so we can store them in a table and look later
+// Primary key is ID, same as BossEntry
+type BossNicknames struct {
+	BossID 	      int 			 `gorm:"primaryKey"`
+	BossName      string
+	BossNicks	  pq.StringArray `gorm:"type:text[]"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -69,6 +85,26 @@ func bossDBInit()(db *gorm.DB) {
 	}
 
 	db.AutoMigrate(&BossEntry{})
+	return db
+}
+
+func reqQueueDBInit()(db *gorm.DB) {
+	db, err := gorm.Open(sqlite.Open("request_queue_test.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	db.AutoMigrate(&UserBossRequest{})
+	return db
+}
+
+func bossNicksDBInit()(db *gorm.DB) {
+	db, err := gorm.Open(sqlite.Open("boss_nicks_test.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	db.AutoMigrate(&BossNicknames{})
 	return db
 }
 

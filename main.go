@@ -17,6 +17,8 @@ import (
 )
 
 var BossDB *gorm.DB
+var ReqQueueDB *gorm.DB
+var BossNickDB *gorm.DB
 var PointsDB *gorm.DB
 
 func init() {
@@ -34,6 +36,8 @@ func main() {
 	fmt.Printf("AUTH_TOKEN is set to %s\n", authToken)
 
 	PointsDB = pointsDBInit()
+	ReqQueueDB = reqQueueDBInit()
+	BossNickDB = bossNicksDBInit()
 	BossDB = bossDBInit()
 
 	helixClient, err := helixInit(clientId, clientSecret, accessToken)
