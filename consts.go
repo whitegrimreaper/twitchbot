@@ -1,7 +1,8 @@
 package main
 
 const markerChar = '!'
-const dummyCommand = "pigeon"
-const checkPoints = "check"
-const addKills = "addkills"
-const checkKills = "checkkills"
+const command_dummyCommand = "pigeon"
+const command_checkPoints = "check"
+const command_addKills = "addkills"
+const command_checkKills = "checkkills"
+const command_help = "help"

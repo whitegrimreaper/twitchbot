@@ -17,7 +17,7 @@ type UserPoints struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
-
+ 
 // Need table to store relationship between users and bosses they request
 // uniquely keyed to each user + boss pair (each user can have up to one entry per boss)
 // i.e. Pigeon requests 50 Kril kills and 20 ED2 runs
@@ -72,22 +72,22 @@ func bossDBInit()(db *gorm.DB) {
 	return db
 }
 
-func doesUserExist(targetUser int)(respCode bool, respMessage string, exists bool) {
+func doesUserExist(targetUser int)(respCode int, respMessage string, exists bool) {
 	var user UserPoints
 	err  := PointsDB.First(&user, "user_id = ?", targetUser).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			fmt.Printf("User doesn't exist!\n")
-			return false, "", false
+			return 1, "", false
 		}
 		fmt.Printf("User exist call returned a different error? %v\n", err)
-		return false, err.Error(), false
+		return -1, err.Error(), false
 	}
 	fmt.Printf("User exists!\n")
-	return true, "", true
+	return 0, "", true
 }
 
-func writePointGainEvent(targetUser int, pointAmount int)(respCode bool, respMessage string) {
+func writePointGainEvent(targetUser int, pointAmount int)(respCode int, respMessage string) {
 	var user UserPoints
 	err := PointsDB.Where(UserPoints{UserID: targetUser}).FirstOrCreate(&user).Error
 	if err != nil {
@@ -99,29 +99,69 @@ func writePointGainEvent(targetUser int, pointAmount int)(respCode bool, respMes
 		fmt.Printf("Error in Update %+v\n", err)
 	}
 	fmt.Printf("Added %d points for user %d(%d), was at %d now has %d\n", pointAmount, targetUser, user.UserID, points, user.Points)
-	return false, ""
+	return 0, ""
 }
 
-func findUserPoints(targetUser int)(respCode bool, respMessage string, points int) {
+func findUserPoints(targetUser int)(respCode int, respMessage string, points int) {
 	var user UserPoints
 	err  := PointsDB.First(&user, "user_id = ?", targetUser).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			fmt.Printf("User doesn't exist!\n")
-			return false, "", 0
+			return 1, "", 0
 		}
 		fmt.Printf("User exist call returned a different error? %v\n", err)
-		return false, err.Error(), 0
+		return -1, err.Error(), 0
 	}
 	fmt.Printf("User exists!\n")
-	return true, "", user.Points
+	return 0, "", user.Points
 }
 
-func writePointSpendEvent(targetUser int, pointAmount int)(respCode bool, respMessage string) {
+func findBossInfo(bossId int)(respCode int, respMessage string, boss BossEntry) {
+	err := BossDB.First(&boss, "boss_id = ?", bossId).Error
+	if err != nil {
+		return 1, "Boss not found!", boss
+	}
+	return 0, "", boss
+}
+
+func writePointSpendEvent(targetUser int, pointAmount int)(respCode int, respMessage string) {
 	var user UserPoints
 	err := PointsDB.Where(UserPoints{UserID: targetUser}).First(&user).Error
 	if err != nil {
-		return false, err.Error()
+		return -1, err.Error()
 	}
-	return true, ""
+	return 0, ""
+}
+
+func addBossKills() {
+
+}
+
+func getBossNameList()(respCode int, respMessage string, names []string) {
+	var bosses []BossEntry
+	err := BossDB.Find(&bosses).Error
+	if err != nil {
+		return -1, "Error finding literally anything", nil
+	}
+	for _, boss := range bosses {
+		names = append(names, boss.BossName)
+	}
+	return 0, "", names
+}
+
+func getBossList()(respCode int, respMessage string, bosses []BossEntry) {
+	err := BossDB.Find(&bosses).Error
+	if err != nil {
+		return -1, "Error finding literally anything", nil
+	}
+	return 0, "", bosses
+}
+
+func getBossWithName(name string)(respCode int, respMessage string, boss BossEntry) {
+	err := BossDB.First(&boss, "boss_name = ?", name)
+	if err != nil {
+		return 1, "Probably no boss with that name bud", boss
+	}
+	return 0, "", boss
 }

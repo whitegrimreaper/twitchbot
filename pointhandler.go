@@ -1,0 +1,42 @@
+package main
+
+import (
+	"fmt"
+	"strconv"
+)
+
+// This class holds functions that hold the 'business logic' interfacing between the twitch commands
+// and the actual db functions. This keeps some nice separation and compartmentalization
+// It's also what we did at my only professional Golang gig so far so monkey see monkey implement
+
+// Tries to add a set number of bosses to the queue
+func executeBossAddition(idInt int, bossName string)(response string) {
+	respCode, respMessage, exists := doesUserExist(idInt)
+	if respCode != 0 || respMessage != "" {
+		response = ""
+		return
+	}
+	if(!exists) {
+		// User doesn't exist in DB so they probably haven't gained any points before
+		// (we keep 0 point entries)
+		response = "Error adding boss kills to log: you don't have any points yet!"
+		return
+	} else {
+		// User exists, grab they points
+		respCode, respMessage, points := findUserPoints(idInt)
+		if respCode != 0 || respMessage != "" {
+			fmt.Printf("%s\n", respMessage)
+			response = "Serious internal error: Id exists but points req failed!"
+			return
+		}
+		// Now also grab the boss info from the db
+		respCode, respMessage, bossInfo := getBossWithName(bossName)
+		if respCode != 0 || respMessage != "" {
+			fmt.Printf("%s\n", respMessage)
+			response = "Serious internal error: Getting boss info failed!"
+			return
+		}
+		response = "golang compiler get off my shit " + strconv.Itoa(points) + " " + bossInfo.BossName
+	}
+	return
+}

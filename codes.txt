@@ -1,0 +1,6 @@
+This is a list of my little interal codes for handling errors (might do this differently in the future though)
+
+-1 = General code for 'idfk'/not in my control
+0  = Success
+1  = Entry DNE
+3  = DB failure

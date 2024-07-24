@@ -106,7 +106,7 @@ func createEventSubSubscriptions(client *helix.Client) {
 	}
 	printThingsFromEventSubResp(resp)
 
-	fmt.Printf("\n=====================================================\nDONE WITH EVENTSUB SUBSCRIPTIONS\n======================================================\n");
+	fmt.Printf("=====================================================\nDONE WITH EVENTSUB SUBSCRIPTIONS\n======================================================\n");
 }
 
 func eventSubHandler(w http.ResponseWriter, r *http.Request) {
@@ -155,12 +155,12 @@ func eventSubHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		respCode, respMessage, exists := doesUserExist(idInt)
-		if !respCode || respMessage != "" {
+		if respCode != 0 || respMessage != "" {
 			fmt.Printf("")
 		}
 		fmt.Printf("Does user exist? %t\n", exists)
 		respCode, respMessage = writePointGainEvent(idInt, 100)
-		if !respCode || respMessage != "" {
+		if respCode != 0 || respMessage != "" {
 			fmt.Printf("")
 		}
 	case helix.EventSubTypeChannelCheer:

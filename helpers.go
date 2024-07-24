@@ -26,3 +26,11 @@ func validateEnvVars(vars []string) {
 		}
 	}
 }
+
+func bossNameToId(bossName string)(bossId int) {
+	respCode, respMessage, boss := getBossWithName(bossName)
+	if respCode != 0 || respMessage != "" {
+		return 0
+	}
+	return boss.BossID
+}
