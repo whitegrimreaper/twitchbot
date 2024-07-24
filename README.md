@@ -13,6 +13,8 @@ Using Golang because I'm a back-end engineer and as such I hate JS as much as it
 ## Current functions:
  - !pigeon
     - Insults pigeonmob
+ - !help
+    - dummy help command, provides no help, just like the uncaring universe
  - !check
     - Checks your current points. There is no way to get them yet because I haven't fully connected the twitch event webhook
 
