@@ -25,8 +25,25 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 		}
 		ret = "You've got " + strconv.Itoa(points) + " points to spend!"
 	case commandName == command_addKills:
+		if len(args) != 3 {
+			ret = "Incorrect number of args! Usage: !addKills <boss name> <# of kills>"
+			return ret, nil
+		}
+		userID, err := strconv.Atoi(message.User.ID)
+		if err != nil {
+			fmt.Printf("Strconv error handling addKills - error converting UserID %s\n", message.User.ID)
+			ret = "Error converting UserID somehow"
+			return ret, nil
+		}
+		bossName := args[1]
+		numKills, err := strconv.Atoi(args[2])
+		if err != nil {
+			fmt.Printf("Strconv error handling addKills - error converting kill count %s\n", message.User.ID)
+			ret = "Kill count needs to be a number"
+			return ret, nil
+		}
 		// allow user to spend points to add kills to the queue
-		ret = ""
+		ret = executeBossAddition(userID,bossName, numKills)
 	case commandName == command_checkKills:
 		// allow user to check how many kills they have left in the current queue
 		ret = ""

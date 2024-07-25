@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/driver/sqlite"
 
-	"github.com/lib/pq"
+	"golang.org/x/exp/slices"
 )
 
 // Table of all users, contains users and the points they have
@@ -62,7 +62,7 @@ type BossEntry struct {
 type BossNicknames struct {
 	BossID 	      int 			 `gorm:"primaryKey"`
 	BossName      string
-	BossNicks	  pq.StringArray `gorm:"type:text[]"`
+	BossNicks	  []string		 `gorm:"type:text[]"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -172,6 +172,25 @@ func writePointSpendEvent(targetUser int, pointAmount int)(respCode int, respMes
 
 func addBossKills() {
 
+}
+
+func getBossNicks(bossId int)(respCode int, respMessage string, nicks BossNicknames) {
+	err := BossNickDB.Where("boss_id = ?", bossId).Find(&nicks).Error
+	if err != nil {
+		return -1, "Uhhhh", nicks
+	}
+	return 0, "", nicks
+}
+
+func getBossTrueName(inputString string)(respCode int, respMessage string, name string) {
+	_, _, bosses := getBossList()
+	for _, boss := range bosses {
+		_, _, nicks := getBossNicks(boss.BossID)
+		if(slices.Contains(nicks.BossNicks, inputString)) {
+			return 0, "", boss.BossName
+		}
+	}
+	return -1, "Boss not found (nickname might be wrong)", ""
 }
 
 func getBossNameList()(respCode int, respMessage string, names []string) {

@@ -10,7 +10,7 @@ import (
 // It's also what we did at my only professional Golang gig so far so monkey see monkey implement
 
 // Tries to add a set number of bosses to the queue
-func executeBossAddition(idInt int, bossName string)(response string) {
+func executeBossAddition(idInt int, bossName string, numKills int)(response string) {
 	respCode, respMessage, exists := doesUserExist(idInt)
 	if respCode != 0 || respMessage != "" {
 		response = ""
@@ -29,11 +29,12 @@ func executeBossAddition(idInt int, bossName string)(response string) {
 			response = "Serious internal error: Id exists but points req failed!"
 			return
 		}
+		respCode, respMessage, trueName := getBossTrueName(bossName)
 		// Now also grab the boss info from the db
-		respCode, respMessage, bossInfo := getBossWithName(bossName)
+		respCode, respMessage, bossInfo := getBossWithName(trueName)
 		if respCode != 0 || respMessage != "" {
 			fmt.Printf("%s\n", respMessage)
-			response = "Serious internal error: Getting boss info failed!"
+			response = "Error: boss name not known!"
 			return
 		}
 		response = "golang compiler get off my shit " + strconv.Itoa(points) + " " + bossInfo.BossName
