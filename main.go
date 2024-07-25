@@ -53,17 +53,18 @@ func main() {
 		panic(err)
 	}
 	
+	fmt.Printf("\n==Testing Helix Return==\n")
 	fmt.Printf("Status code: %d\n", resp.StatusCode)
-	fmt.Printf("Message: %s\n", resp.ErrorMessage)
 	fmt.Printf("Rate limit: %d\n", resp.GetRateLimit())
 	fmt.Printf("Rate limit remaining: %d\n", resp.GetRateLimitRemaining())
-	fmt.Printf("Rate limit reset: %d\n\n", resp.GetRateLimitReset())
+	fmt.Printf("Rate limit reset: %d\n", resp.GetRateLimitReset())
 	
 	for _, user := range resp.Data.Users {
 		fmt.Printf("ID: %s Name: %s\n", user.ID, user.DisplayName)
 	}
+	fmt.Printf("==Done with Helix Return==\n\n")
 
-	// TODO currently I create new listeners every time the bot is run, so I'm at 13 subscriptions as of the writing of this
+	// TODO currently I create new listeners every time the bot is run, so I'm at 91 subscriptions (updating this every time i see)
 	// should really remove them here
 
 	//go startTwitchEventListener()
@@ -71,12 +72,14 @@ func main() {
 
 	time.Sleep(3*time.Second)
 	// leaving this in as a reminder to check eventsub subs at some point
-	/*eventSubResp, err := helixClient.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{
+	eventSubResp, err := helixClient.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{
 		Status: helix.EventSubStatusEnabled, // This is optional.
 	})
 	if err != nil {
 		panic(err)
-	}*/
+	}
+
+	fmt.Printf("Current number of eventsub subs: %d :(\n\n",eventSubResp.Data.Total)
 
 	// Twitch bot configuration
 	botUsername := "whitegrimbot"
