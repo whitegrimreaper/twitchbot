@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 )
 
 // This class holds functions that hold the 'business logic' interfacing between the twitch commands
@@ -30,6 +29,11 @@ func executeBossAddition(idInt int, bossName string, numKills int)(response stri
 			return
 		}
 		respCode, respMessage, trueName := getBossTrueName(bossName)
+		if respCode != 0 || respMessage != "" {
+			fmt.Printf("%s\n", respMessage)
+			response = "Make sure to give a known name for the boss!"
+			return
+		}
 		// Now also grab the boss info from the db
 		respCode, respMessage, bossInfo := getBossWithName(trueName)
 		if respCode != 0 || respMessage != "" {
@@ -37,7 +41,10 @@ func executeBossAddition(idInt int, bossName string, numKills int)(response stri
 			response = "Error: boss name not known!"
 			return
 		}
-		response = "golang compiler get off my shit " + strconv.Itoa(points) + " " + bossInfo.BossName
+		valid, reason := checkRequestIsValid(bossInfo, points, numKills)
+		if !valid {
+			response = reason
+		}
 	}
 	return
 }

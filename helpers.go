@@ -34,3 +34,13 @@ func bossNameToId(bossName string)(bossId int) {
 	}
 	return boss.BossID
 }
+
+func checkRequestIsValid(bossInfo BossEntry, currPoints int, numKills int)(valid bool, reason string) {
+	requestCost := numKills * bossInfo.BossCost;
+
+	if requestCost > currPoints {
+		return false, "User doesn't have enough points"
+	} else {
+		return true, ""
+	}
+}
