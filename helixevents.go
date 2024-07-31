@@ -109,6 +109,15 @@ func createEventSubSubscriptions(client *helix.Client) {
 	fmt.Printf("=====================================================\nDONE WITH EVENTSUB SUBSCRIPTIONS\n======================================================\n");
 }
 
+// Used for deleting all ESS's because currently I don't handle them well
+func deleteEventSubSubscription(client *helix.Client, subId string) {
+	resp, err := client.RemoveEventSubSubscription(subId)
+	if err != nil {
+		fmt.Printf("Error removing EventSubSub %s : %s\n",subId, err)
+	}
+	fmt.Printf("ESS %s removed", resp)
+}
+
 func eventSubHandler(w http.ResponseWriter, r *http.Request) {
     body, err := io.ReadAll(r.Body)
     if err != nil {

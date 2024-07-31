@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 	"errors"
+	"encoding/json"
 	"gorm.io/gorm"
+	"database/sql/driver"
 	"gorm.io/driver/sqlite"
 
 	"golang.org/x/exp/slices"
@@ -25,7 +27,7 @@ type UserPoints struct {
 // i.e. Pigeon requests 50 Kril kills and 20 ED2 runs
 //       -> two entries under Pigeon's UserID, one for Kril, one for ED2
 type UserBossRequest struct {
-	UUID   int					`gorm:"primaryKey"`
+	reqId  int					`gorm:"primaryKey;autoIncrement:true"`
 	UserID int
 	BossID int
 	BossKillsDone int
@@ -56,13 +58,28 @@ type BossEntry struct {
 	UpdatedAt time.Time
 }
 
+type StringArray []string
+
+func (a *StringArray) Scan(value interface{}) error {
+	*a, _ = value.([]string)
+	return nil
+}
+
+func (a StringArray) Value() (driver.Value, error) {
+	val, err := json.Marshal([]string(a))
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
+}
+
 // Bosses may have many nicknames
 // They don't change a ton so we can store them in a table and look later
 // Primary key is ID, same as BossEntry
 type BossNicknames struct {
 	BossID 	      int 			 `gorm:"primaryKey"`
 	BossName      string
-	BossNicks	  []string		 `gorm:"type:text[]"`
+	BossNicks	  StringArray	 //`gorm:"type:text[]"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -130,7 +147,7 @@ func writePointGainEvent(targetUser int, pointAmount int)(respCode int, respMess
 		fmt.Printf("Error in init %+v\n", err)
 	}
 	points := user.Points
-	err = PointsDB.Model(&user).Update("Points", user.Points+pointAmount).Error
+	err = PointsDB.Model(&user).Update("Points", user.Points + pointAmount).Error
 	if err != nil {
 		fmt.Printf("Error in Update %+v\n", err)
 	}
@@ -167,11 +184,32 @@ func writePointSpendEvent(targetUser int, pointAmount int)(respCode int, respMes
 	if err != nil {
 		return -1, err.Error()
 	}
+	user.Points -= pointAmount
+	err = PointsDB.Model(&user).Update("points", user.Points).Error
+	if err != nil {
+		return -1, err.Error()
+	}
 	return 0, ""
 }
 
-func addBossKills() {
+func addBossKills(targetUser int, bossId int, bossKills int)(respCode int, respMessage string) {
+	var boss BossEntry
+	var queue UserBossRequest
 
+	err := BossDB.Where("boss_id = ?", bossId).First(&boss).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	err = ReqQueueDB.Where(UserBossRequest{UserID: targetUser, BossID: bossId}).FirstOrCreate(&queue).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	err = ReqQueueDB.Model(&queue).Where("user_id = ? AND boss_id = ?", targetUser, bossId).
+		Update("boss_kills_left", queue.BossKillsLeft + bossKills).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	return 0, ""
 }
 
 func getBossNicks(bossId int)(respCode int, respMessage string, nicks BossNicknames) {
@@ -186,7 +224,7 @@ func getBossTrueName(inputString string)(respCode int, respMessage string, name 
 	_, _, bosses := getBossList()
 	for _, boss := range bosses {
 		_, _, nicks := getBossNicks(boss.BossID)
-		if(slices.Contains(nicks.BossNicks, inputString)) {
+		if(slices.Contains(nicks.BossNicks, inputString) || inputString == boss.BossName) {
 			return 0, "", boss.BossName
 		}
 	}
@@ -214,7 +252,7 @@ func getBossList()(respCode int, respMessage string, bosses []BossEntry) {
 }
 
 func getBossWithName(name string)(respCode int, respMessage string, boss BossEntry) {
-	err := BossDB.First(&boss, "boss_name = ?", name)
+	err := BossDB.First(&boss, "boss_name = ?", name).Error
 	if err != nil {
 		return 1, "Probably no boss with that name bud", boss
 	}

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"time"
+	//"time"
 	"os"
 	"os/signal"
 	"strings"
@@ -44,6 +44,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// leaving this in as a reminder to check eventsub subs at some point, should really just update
+	// existing ones instead of remaking every time
+	eventSubResp, err := helixClient.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{
+		//Status: helix.EventSubStatusEnabled, // This is optional.
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Current number of eventsub subs: %d :)\n\n",eventSubResp.Data.Total)
+	//fmt.Printf("Eventsub data %+v\n\n", eventSubResp.Data.EventSubSubscriptions[0])
+	// Currently deletes a bunch of eventsubs, use when number of subs passes like 20
+	//for _, sub := range eventSubResp.Data.EventSubSubscriptions {
+	//	deleteEventSubSubscription(helixClient, sub.ID)
+	//}
 	createEventSubSubscriptions(helixClient)
 
 	resp, err := helixClient.GetUsers(&helix.UsersParams{
@@ -69,17 +84,6 @@ func main() {
 
 	//go startTwitchEventListener()
 	go startTwitchListeners()
-
-	time.Sleep(3*time.Second)
-	// leaving this in as a reminder to check eventsub subs at some point
-	eventSubResp, err := helixClient.GetEventSubSubscriptions(&helix.EventSubSubscriptionsParams{
-		Status: helix.EventSubStatusEnabled, // This is optional.
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("Current number of eventsub subs: %d :(\n\n",eventSubResp.Data.Total)
 
 	// Twitch bot configuration
 	botUsername := "whitegrimbot"

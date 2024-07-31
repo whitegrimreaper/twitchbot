@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	twitch "github.com/gempir/go-twitch-irc/v4"
 )
@@ -11,6 +12,10 @@ import (
 func handleCommand(args []string, message twitch.PrivateMessage) (string, error) {
 	var ret string
 	commandName := strings.TrimPrefix(args[0], "!")
+	// Rather than handling concurrency correctly with like db locks or something fun like that
+	// we just sleep whenever we see a proper command so the previous ones have time to run
+	// DBs should never get that big so I don't think we'll run afoul of this before we can fix
+	time.Sleep(20*time.Millisecond)
 	switch {
 	case commandName == command_dummyCommand:
 		ret = "fricc you pigeon NoPigeons FinestPigeon"
@@ -25,7 +30,8 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 		}
 		ret = "You've got " + strconv.Itoa(points) + " points to spend!"
 	case commandName == command_addKills:
-		if len(args) != 3 {
+		fmt.Printf("Have # args %d, %+v\n", len(args), args)
+		if len(args) < 3 {
 			ret = "Incorrect number of args! Usage: !addKills <boss name> <# of kills>"
 			return ret, nil
 		}
@@ -41,6 +47,9 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 			fmt.Printf("Strconv error handling addKills - error converting kill count %s\n", message.User.ID)
 			ret = "Kill count needs to be a number"
 			return ret, nil
+		}
+		if numKills <= 0 {
+			return "Kill count needs to be a positive integer", nil
 		}
 		// allow user to spend points to add kills to the queue
 		ret = executeBossAddition(userID,bossName, numKills)

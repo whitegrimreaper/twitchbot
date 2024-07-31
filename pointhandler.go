@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 )
 
 // This class holds functions that hold the 'business logic' interfacing between the twitch commands
@@ -12,7 +13,9 @@ import (
 func executeBossAddition(idInt int, bossName string, numKills int)(response string) {
 	respCode, respMessage, exists := doesUserExist(idInt)
 	if respCode != 0 || respMessage != "" {
-		response = ""
+		// TODO - Handle this correctly, the user should know if they try to add kills and have no 
+		// points
+		response = "You need to earn points before you add kills!"
 		return
 	}
 	if(!exists) {
@@ -44,7 +47,24 @@ func executeBossAddition(idInt int, bossName string, numKills int)(response stri
 		valid, reason := checkRequestIsValid(bossInfo, points, numKills)
 		if !valid {
 			response = reason
+			return
 		}
+		pointCost := (numKills * bossInfo.BossCost)
+		fmt.Printf("numKills %d bosscost %d should cost %d\n", numKills, bossInfo.BossCost, pointCost)
+		// Do the thing
+		respCode, respMessage = writePointSpendEvent(idInt, pointCost)
+		if respCode != 0 || respMessage != "" {
+			fmt.Printf("%s\n", respMessage)
+			response = respMessage
+			return
+		}
+		respCode, respMessage = addBossKills(idInt, bossInfo.BossID, numKills)
+		if respCode != 0 || respMessage != "" {
+			fmt.Printf("%s\n", respMessage)
+			response = respMessage
+			return
+		}
+		response = strconv.Itoa(numKills) + " kills added for " + bossInfo.BossName + "!"
 	}
 	return
 }
