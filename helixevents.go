@@ -115,7 +115,7 @@ func deleteEventSubSubscription(client *helix.Client, subId string) {
 	if err != nil {
 		fmt.Printf("Error removing EventSubSub %s : %s\n",subId, err)
 	}
-	fmt.Printf("ESS %s removed", resp)
+	fmt.Printf("ESS %+v removed\n", resp)
 }
 
 func eventSubHandler(w http.ResponseWriter, r *http.Request) {
