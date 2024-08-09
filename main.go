@@ -59,7 +59,11 @@ func main() {
 	//for _, sub := range eventSubResp.Data.EventSubSubscriptions {
 	//	deleteEventSubSubscription(helixClient, sub.ID)
 	//}
-	createEventSubSubscriptions(helixClient)
+
+	// Currently, the event subs aren't actually active because the listener doesn't match the
+	// current port
+	// TODO: Get HTTPS working and start listening on port 443
+	//createEventSubSubscriptions(helixClient)
 
 	resp, err := helixClient.GetUsers(&helix.UsersParams{
 		Logins: []string{"whitegrimreaper_"},

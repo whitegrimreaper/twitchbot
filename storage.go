@@ -43,16 +43,18 @@ type UserBossRequest struct {
 // Shows the current 'queue' of boss kills
 // Kills left -> kills left in queue to do
 // kills done -> tracking progress over the whole event
+// requests frozen - > stop allowing new requests for this boss
 // Boss Multiple -> # of kills purchased per event
 //         if this is set to 5, you can only request 5, 10, 15, etc.
 //		   not 100% on this one ngl
 // Cost -> number of points per BossMultiple # of kills
 type BossEntry struct {
-	BossID 	      int 			`gorm:"primaryKey"`
-	BossName      string
-	BossCost      int
-	BossKillsLeft int
-	BossKillsDone int
+	BossID 	      	   int 			`gorm:"primaryKey"`
+	BossName      	   string
+	BossCost      	   int
+	BossKillsLeft 	   int
+	BossKillsDone 	   int
+	BossRequestsFrozen int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
