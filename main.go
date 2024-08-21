@@ -63,7 +63,7 @@ func main() {
 	// Currently, the event subs aren't actually active because the listener doesn't match the
 	// current port
 	// TODO: Get HTTPS working and start listening on port 443
-	//createEventSubSubscriptions(helixClient)
+	createEventSubSubscriptions(helixClient)
 
 	resp, err := helixClient.GetUsers(&helix.UsersParams{
 		Logins: []string{"whitegrimreaper_"},
@@ -87,7 +87,8 @@ func main() {
 	// should really remove them here
 
 	//go startTwitchEventListener()
-	go startTwitchListeners()
+	//go startTwitchListeners()
+	go startSecureTwitchListeners()
 
 	// Twitch bot configuration
 	botUsername := "whitegrimbot"

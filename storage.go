@@ -54,7 +54,7 @@ type BossEntry struct {
 	BossCost      	   int
 	BossKillsLeft 	   int
 	BossKillsDone 	   int
-	BossRequestsFrozen int
+	BossRequestsFrozen bool
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -194,7 +194,7 @@ func writePointSpendEvent(targetUser int, pointAmount int)(respCode int, respMes
 	return 0, ""
 }
 
-func addBossKills(targetUser int, bossId int, bossKills int)(respCode int, respMessage string) {
+func addBossKillsQueue(targetUser int, bossId int, bossKills int)(respCode int, respMessage string) {
 	var boss BossEntry
 	var queue UserBossRequest
 
@@ -212,6 +212,31 @@ func addBossKills(targetUser int, bossId int, bossKills int)(respCode int, respM
 		return -1, err.Error()
 	}
 	return 0, ""
+}
+
+func addBossKillsMain(targetUser int, bossId int, bossKills int)(respCode int, respMessage string) {
+	var boss BossEntry
+
+	err := BossDB.Where("boss_id = ?", bossId).First(&boss).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	err = ReqQueueDB.Model(&boss).Where("boss_id = ?", bossId).
+		Update("boss_kills_left", boss.BossKillsLeft + bossKills).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	return 0, ""
+}
+
+func isBossKillLocked(bossId int)(isLocked bool, respCode int, respMessage string) {
+	var boss BossEntry
+
+	err := BossDB.Where("boss_id = ?", bossId).First(&boss).Error
+	if err != nil {
+		return true, -1, err.Error()
+	}
+	return boss.BossRequestsFrozen, 0, ""
 }
 
 func getBossNicks(bossId int)(respCode int, respMessage string, nicks BossNicknames) {

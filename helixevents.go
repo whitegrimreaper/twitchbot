@@ -35,6 +35,15 @@ func startTwitchListeners() {
 	http.ListenAndServe(":3000", nil)
 }
 
+func startSecureTwitchListeners() {
+	http.HandleFunc("/eventsub", eventSubHandler)
+	fmt.Println("Starting server on port 443")
+    err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
+    if err != nil {
+        panic(err)
+    }
+}
+
 func handleTwitchCallback(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		// Process the incoming webhook payload

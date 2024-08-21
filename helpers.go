@@ -13,6 +13,7 @@ func printThingsFromEventSubResp(resp *helix.EventSubSubscriptionsResponse) {
 	} else if(resp.ResponseCommon.StatusCode > 300) {
 		// counting any of this as error lol
 		fmt.Printf("Failed!\n")
+		fmt.Printf("%+v\n", resp)
 	} else {
 		fmt.Printf("You have majorly fucked something up\n")
 	}

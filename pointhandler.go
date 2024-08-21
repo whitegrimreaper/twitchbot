@@ -58,7 +58,13 @@ func executeBossAddition(idInt int, bossName string, numKills int)(response stri
 			response = respMessage
 			return
 		}
-		respCode, respMessage = addBossKills(idInt, bossInfo.BossID, numKills)
+		respCode, respMessage = addBossKillsQueue(idInt, bossInfo.BossID, numKills)
+		if respCode != 0 || respMessage != "" {
+			fmt.Printf("%s\n", respMessage)
+			response = respMessage
+			return
+		}
+		respCode, respMessage = addBossKillsMain(idInt, bossInfo.BossID, numKills)
 		if respCode != 0 || respMessage != "" {
 			fmt.Printf("%s\n", respMessage)
 			response = respMessage

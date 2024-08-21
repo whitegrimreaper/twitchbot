@@ -29,3 +29,6 @@ go.work.sum
 
 #i'm using this for notes that contain tokens/secrets
 *.ignr
+
+# ignore ssl key
+*.pem
