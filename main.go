@@ -87,8 +87,8 @@ func main() {
 	// should really remove them here
 
 	//go startTwitchEventListener()
-	//go startTwitchListeners()
-	go startSecureTwitchListeners()
+	go startTwitchListeners()
+	//go startSecureTwitchListeners()
 
 	// Twitch bot configuration
 	botUsername := "whitegrimbot"

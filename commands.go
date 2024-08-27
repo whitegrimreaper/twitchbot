@@ -19,6 +19,8 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 	switch {
 	case commandName == command_dummyCommand:
 		ret = "fricc you pigeon NoPigeons FinestPigeon"
+	case commandName == command_sandpitTurtle:
+		ret = "THIS IS SANDPIT TURTLE"
 	case commandName == command_checkPoints:
 		userID, err := strconv.Atoi(message.User.ID)
 		if err != nil {
@@ -41,8 +43,8 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 			ret = "Error converting UserID somehow"
 			return ret, nil
 		}
-		bossName := args[1]
-		numKills, err := strconv.Atoi(args[2])
+		bossName := strings.Join(args[1 : len(args)-1], " ")
+		numKills, err := strconv.Atoi(args[len(args)-1])
 		if err != nil {
 			fmt.Printf("Strconv error handling addKills - error converting kill count %s\n", message.User.ID)
 			ret = "Kill count needs to be a number"
@@ -59,6 +61,32 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 	case commandName == command_help:
 		ret = "Help is on the way! (help command is currently under construction)"
 		// call separate "handle_help" function or smth
+	case commandName == command_removeKills:
+		if len(args) < 3 {
+			ret = "Incorrect number of args! Usage: !addKills <boss name> <# of kills>"
+			return ret, nil
+		}
+		userID, err := strconv.Atoi(message.User.ID)
+		if err != nil {
+			fmt.Printf("Strconv error handling addKills - error converting UserID %s\n", message.User.ID)
+			ret = "Error converting UserID somehow"
+			return ret, nil
+		}
+		bossName := args[1]
+		numKills, err := strconv.Atoi(args[2])
+		if err != nil {
+			fmt.Printf("Strconv error handling addKills - error converting kill count %s\n", message.User.ID)
+			ret = "Kill count needs to be a number"
+			return ret, nil
+		}
+		if numKills <= 0 {
+			return "Kill count needs to be a positive integer (even for remove, yes)", nil
+		}
+		// only I or maybe moderators should be able to do this one
+		if userID != 57810555 {
+			return "Not authorized for this request!", nil
+		}
+		ret = executeBossRemoval(bossName, numKills)
 	}
 	return ret, nil
 }

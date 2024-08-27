@@ -49,6 +49,10 @@ func executeBossAddition(idInt int, bossName string, numKills int)(response stri
 			response = reason
 			return
 		}
+		if bossInfo.BossRequestsFrozen != 0 {
+			response = "Requests for that boss are frozen!"
+			return
+		}
 		pointCost := (numKills * bossInfo.BossCost)
 		fmt.Printf("numKills %d bosscost %d should cost %d\n", numKills, bossInfo.BossCost, pointCost)
 		// Do the thing
@@ -71,6 +75,54 @@ func executeBossAddition(idInt int, bossName string, numKills int)(response stri
 			return
 		}
 		response = strconv.Itoa(numKills) + " kills added for " + bossInfo.BossName + "!"
+	}
+	return
+}
+
+func executeBossRemoval(bossName string, numKills  int)(response string) {
+	respCode, respMessage, trueName := getBossTrueName(bossName)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = "Make sure to give a known name for the boss!"
+		return
+	}
+	// Now also grab the boss info from the db
+	respCode, respMessage, bossInfo := getBossWithName(trueName)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = "Error: boss name not known!"
+		return
+	}
+	respCode, respMessage, queueId := findQueueEntryToRemoveFrom(bossInfo.BossID)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = "Error: no queue entries for this boss!"
+		return
+	}
+	
+
+	// do the thing
+	respCode, respMessage = removeBossKillsQueue(queueId, numKills)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = "Error removing kills from the queue"
+		return
+	}
+
+	// I'm just using add with a negative number here tbh
+	respCode, respMessage = addBossKillsMain(queueId, bossInfo.BossID, numKills * -1)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = respMessage
+		return
+	}
+
+	// check if we should delete the request entry
+	respCode, respMessage = deleteQueueIfEmpty(queueId)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = respMessage
+		return
 	}
 	return
 }

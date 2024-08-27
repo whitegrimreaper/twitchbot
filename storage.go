@@ -27,7 +27,7 @@ type UserPoints struct {
 // i.e. Pigeon requests 50 Kril kills and 20 ED2 runs
 //       -> two entries under Pigeon's UserID, one for Kril, one for ED2
 type UserBossRequest struct {
-	reqId  int					`gorm:"primaryKey;autoIncrement:true"`
+	UUID  int					`gorm:"primaryKey;autoIncrement:true"`
 	UserID int
 	BossID int
 	BossKillsDone int
@@ -54,7 +54,7 @@ type BossEntry struct {
 	BossCost      	   int
 	BossKillsLeft 	   int
 	BossKillsDone 	   int
-	BossRequestsFrozen bool
+	BossRequestsFrozen int
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -202,6 +202,7 @@ func addBossKillsQueue(targetUser int, bossId int, bossKills int)(respCode int, 
 	if err != nil {
 		return -1, err.Error()
 	}
+	
 	err = ReqQueueDB.Where(UserBossRequest{UserID: targetUser, BossID: bossId}).FirstOrCreate(&queue).Error
 	if err != nil {
 		return -1, err.Error()
@@ -221,7 +222,7 @@ func addBossKillsMain(targetUser int, bossId int, bossKills int)(respCode int, r
 	if err != nil {
 		return -1, err.Error()
 	}
-	err = ReqQueueDB.Model(&boss).Where("boss_id = ?", bossId).
+	err = BossDB.Model(&boss).Where("boss_id = ?", bossId).
 		Update("boss_kills_left", boss.BossKillsLeft + bossKills).Error
 	if err != nil {
 		return -1, err.Error()
@@ -229,12 +230,58 @@ func addBossKillsMain(targetUser int, bossId int, bossKills int)(respCode int, r
 	return 0, ""
 }
 
-func isBossKillLocked(bossId int)(isLocked bool, respCode int, respMessage string) {
+func findQueueEntryToRemoveFrom(bossId int)(respCode int, respMessage string, queueId int) {
+	var queues []UserBossRequest
+
+	fmt.Printf("Looking for %d boss id\n", bossId)
+	err := ReqQueueDB.Where("boss_id = ?", bossId).Find(&queues).Order("created_at desc").Error
+	if err != nil {
+		return -1, err.Error(), 0
+	}
+	return 0, "", queues[0].UUID
+}
+
+// Only called after we've found a specific instance in the queue to remove from
+func removeBossKillsQueue(reqId int, bossKills int)(respCode int, respMessage string) {
+	var queue UserBossRequest
+
+	err := ReqQueueDB.Where(UserBossRequest{UUID: reqId}).First(&queue).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	if(bossKills > queue.BossKillsLeft) {
+		return -1, "Tried to remove more kills than the queue entry had!"
+	}
+	err = ReqQueueDB.Model(&queue).Where("uuid = ?", reqId).
+		Update("boss_kills_left", queue.BossKillsLeft - bossKills).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	return 0, ""
+}
+
+func deleteQueueIfEmpty(reqId int)(respCode int, respMessge string) {
+	var queue UserBossRequest
+
+	err := ReqQueueDB.Where(UserBossRequest{UUID: reqId}).First(&queue).Error
+	if err != nil {
+		return -1, err.Error()
+	}
+	if(queue.BossKillsLeft <= 0) {
+		err = ReqQueueDB.Delete(&queue).Error
+		if err != nil {
+			return -1, err.Error()
+		}
+	}
+	return 0, ""
+}
+
+func isBossKillLocked(bossId int)(isLocked int, respCode int, respMessage string) {
 	var boss BossEntry
 
 	err := BossDB.Where("boss_id = ?", bossId).First(&boss).Error
 	if err != nil {
-		return true, -1, err.Error()
+		return 1, -1, err.Error()
 	}
 	return boss.BossRequestsFrozen, 0, ""
 }

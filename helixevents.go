@@ -115,6 +115,25 @@ func createEventSubSubscriptions(client *helix.Client) {
 	}
 	printThingsFromEventSubResp(resp)
 
+	fmt.Printf("Creating channel point subscription...\n")
+	resp, err = client.CreateEventSubSubscription(&helix.EventSubSubscription{
+		Type: helix.EventSubTypeChannelPointsCustomRewardRedemptionAdd,
+		Version: "1",
+		Condition: helix.EventSubCondition{
+			BroadcasterUserID: os.Getenv("BROADCASTER_ID"),
+			ModeratorUserID: os.Getenv("BOT_ID"),
+		},
+		Transport: helix.EventSubTransport{
+			Method: "webhook",
+			Callback: "https://localhost:443",
+			Secret: os.Getenv("EVENTSUB_SECRET"),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	printThingsFromEventSubResp(resp)
+
 	fmt.Printf("=====================================================\nDONE WITH EVENTSUB SUBSCRIPTIONS\n======================================================\n");
 }
 
@@ -187,6 +206,12 @@ func eventSubHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {fmt.Printf("")}
 		fmt.Printf("Got Cheer event!\n")
 		fmt.Printf("%s gave bits to %s in amount %d!\n", cheerEvent.UserName, cheerEvent.BroadcasterUserName, cheerEvent.Bits)
+	case helix.EventSubTypeChannelPointsCustomRewardRedemptionAdd:
+		var pointsEvent helix.EventSubChannelPointsCustomRewardRedemptionEvent 
+		err = json.NewDecoder(bytes.NewReader(vals.Event)).Decode(&pointsEvent)
+		if err != nil {fmt.Printf("")}
+		fmt.Printf("Got channel point event!\n")
+		fmt.Printf("%s redeemed %d points for %s!\n", pointsEvent.UserName, pointsEvent.Reward.Cost, pointsEvent.Reward.Title)
 	}
 
     //fmt.Printf("got follow webhook: %s follows %s\n", followEvent.UserName, followEvent.BroadcasterUserName)
