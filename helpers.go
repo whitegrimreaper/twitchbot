@@ -3,6 +3,7 @@ package main
 import(
 	"fmt"
 	"os"
+	"strings"
 	helix "github.com/nicklaw5/helix/v2"
 )
 
@@ -44,4 +45,15 @@ func checkRequestIsValid(bossInfo BossEntry, currPoints int, numKills int)(valid
 	} else {
 		return true, ""
 	}
+}
+
+// yoinked from fastbill/go-tiny-helpers because the import didn't work 
+// (prob a golang version thing)
+func ContainsStringCaseInsensitive(list []string, value string) bool {
+	for _, item := range list {
+		if strings.EqualFold(item, value) {
+			return true
+		}
+	}
+	return false
 }

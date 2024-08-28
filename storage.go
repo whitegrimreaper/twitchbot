@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"time"
 	"errors"
+	"strings"
 	"encoding/json"
 	"gorm.io/gorm"
 	"database/sql/driver"
 	"gorm.io/driver/sqlite"
-
-	"golang.org/x/exp/slices"
 )
 
 // Table of all users, contains users and the points they have
@@ -63,7 +62,20 @@ type BossEntry struct {
 type StringArray []string
 
 func (a *StringArray) Scan(value interface{}) error {
-	*a, _ = value.([]string)
+	switch v := value.(type) {
+	case string:
+		// Handle comma-separated string
+		*a = StringArray(strings.Split(v, ","))
+	case []byte:
+		// Handle JSON-encoded string
+		var arr []string
+		if err := json.Unmarshal(v, &arr); err != nil {
+			return err
+		}
+		*a = arr
+	default:
+		return errors.New("failed to scan StringArray: unsupported type")
+	}
 	return nil
 }
 
@@ -81,7 +93,7 @@ func (a StringArray) Value() (driver.Value, error) {
 type BossNicknames struct {
 	BossID 	      int 			 `gorm:"primaryKey"`
 	BossName      string
-	BossNicks	  StringArray	 //`gorm:"type:text[]"`
+	BossNicks	  StringArray	 `gorm:"type:text"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -233,10 +245,12 @@ func addBossKillsMain(targetUser int, bossId int, bossKills int)(respCode int, r
 func findQueueEntryToRemoveFrom(bossId int)(respCode int, respMessage string, queueId int) {
 	var queues []UserBossRequest
 
-	fmt.Printf("Looking for %d boss id\n", bossId)
 	err := ReqQueueDB.Where("boss_id = ?", bossId).Find(&queues).Order("created_at desc").Error
 	if err != nil {
 		return -1, err.Error(), 0
+	}
+	if len(queues) == 0 {
+		return 1, "No Queue entries found!", 0
 	}
 	return 0, "", queues[0].UUID
 }
@@ -276,6 +290,15 @@ func deleteQueueIfEmpty(reqId int)(respCode int, respMessge string) {
 	return 0, ""
 }
 
+func findUserQueueEntries(userId int)(respCode int, respMessage string, entries []UserBossRequest) {
+	fmt.Printf("Looking for %d user id\n", userId)
+	err := ReqQueueDB.Where("user_id = ?", userId).Find(&entries).Order("created_at desc").Error
+	if err != nil {
+		return 0, err.Error(), nil
+	}
+	return 0, "", entries
+}
+
 func isBossKillLocked(bossId int)(isLocked int, respCode int, respMessage string) {
 	var boss BossEntry
 
@@ -298,7 +321,7 @@ func getBossTrueName(inputString string)(respCode int, respMessage string, name 
 	_, _, bosses := getBossList()
 	for _, boss := range bosses {
 		_, _, nicks := getBossNicks(boss.BossID)
-		if(slices.Contains(nicks.BossNicks, inputString) || inputString == boss.BossName) {
+		if(ContainsStringCaseInsensitive(nicks.BossNicks, inputString) || inputString == boss.BossName) {
 			return 0, "", boss.BossName
 		}
 	}
