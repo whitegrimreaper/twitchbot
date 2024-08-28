@@ -17,6 +17,11 @@ type eventSubNotification struct {
 	Event        json.RawMessage            `json:"event"`
 }
 
+type StreamDeckPayload struct {
+	BossName string `json:"boss_name"`
+	NumKills    int `json:"num_kills"`
+}
+
 func helixInit(clientId, clientSecret, accessToken string)(client *helix.Client, err error) {
 	helixClient, err := helix.NewClient(&helix.Options{
 		ClientID: clientId,
@@ -33,6 +38,11 @@ func startTwitchListeners() {
 	http.HandleFunc("/twitch/webhook", handleTwitchCallback)
 	http.HandleFunc("/eventsub", eventSubHandler)
 	http.ListenAndServe(":3000", nil)
+}
+
+func startStreamDeckListener() {
+	http.HandleFunc("/webhook", streamDeckWebhookHandler)
+	http.ListenAndServe(":8081", nil)
 }
 
 func startSecureTwitchListeners() {
@@ -217,4 +227,19 @@ func eventSubHandler(w http.ResponseWriter, r *http.Request) {
     //fmt.Printf("got follow webhook: %s follows %s\n", followEvent.UserName, followEvent.BroadcasterUserName)
     w.WriteHeader(200)
     w.Write([]byte("ok"))
+}
+
+func streamDeckWebhookHandler(w http.ResponseWriter, r *http.Request) {
+	var payload StreamDeckPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
+		return
+	}
+	fmt.Printf("Received payload: %+v\n", payload)
+	resp := executeBossRemoval(payload.BossName, payload.NumKills)
+	if resp != "Success!" {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	}
 }
