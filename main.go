@@ -90,6 +90,13 @@ func main() {
 	go startTwitchListeners()
 	//go startSecureTwitchListeners()
 
+	// Listener For StreamDeck Events
+	go startStreamDeckListener()
+
+	// TODO: Should move the overlay/browser stuff to this package
+	// mostly so I don't have to run multiple separate go programs
+	// to get things running
+
 	// Twitch bot configuration
 	botUsername := "whitegrimbot"
 	channel := "whitegrimreaper_"
@@ -140,7 +147,10 @@ func main() {
 }
 
 func extractArgs(message twitch.PrivateMessage) (args []string, err error) {
-	ret := strings.Fields(message.Message)
+	// This is a really weird glitch of some kind, not sure if Twitch or go-twitch-irc
+	// but sometimes (always with identical messages), messages will have this
+	// Unknown character appended to the end. So we trim it here. Idk why it does that
+	ret := strings.Fields(strings.Trim(message.Message, " 󠀀"))
 	return ret, nil
 }
 
