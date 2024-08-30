@@ -44,7 +44,9 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 			return ret, nil
 		}
 		bossName := strings.Join(args[1 : len(args)-1], " ")
-		numKills, err := strconv.Atoi(args[len(args)-1])
+		var numKills int
+		fmt.Printf("Last arg is |%+v|\n", args[len(args)-1])
+		numKills, err = strconv.Atoi(args[len(args)-1])
 		if err != nil {
 			fmt.Printf("Strconv error handling addKills - error converting kill count %s\n", message.User.ID)
 			ret = "Kill count needs to be a number"
@@ -57,7 +59,13 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 		ret = executeBossAddition(userID,bossName, numKills)
 	case commandName == command_checkKills:
 		// allow user to check how many kills they have left in the current queue
-		ret = ""
+		userID, err := strconv.Atoi(message.User.ID)
+		if err != nil {
+			fmt.Printf("Strconv error handling checkKills - error converting UserID %s\n", message.User.ID)
+			ret = "Error converting UserID somehow"
+			return ret, nil
+		}
+		ret = handleCheckKills(userID)
 	case commandName == command_help:
 		ret = "Help is on the way! (help command is currently under construction)"
 		// call separate "handle_help" function or smth
@@ -72,8 +80,8 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 			ret = "Error converting UserID somehow"
 			return ret, nil
 		}
-		bossName := args[1]
-		numKills, err := strconv.Atoi(args[2])
+		bossName := strings.Join(args[1 : len(args)-1], " ")
+		numKills, err := strconv.Atoi(args[len(args)-1])
 		if err != nil {
 			fmt.Printf("Strconv error handling addKills - error converting kill count %s\n", message.User.ID)
 			ret = "Kill count needs to be a number"
