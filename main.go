@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	//"time"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"net/http"
+
+	"golang.ngrok.com/ngrok"
+	"golang.ngrok.com/ngrok/config"
 
 	"github.com/joho/godotenv"
 	"github.com/nicklaw5/helix/v2"
@@ -20,6 +25,7 @@ var BossDB *gorm.DB
 var ReqQueueDB *gorm.DB
 var BossNickDB *gorm.DB
 var PointsDB *gorm.DB
+var WebhookClient *http.Client
 
 func init() {
 	if err := godotenv.Load(); err != nil {
@@ -39,6 +45,7 @@ func main() {
 	ReqQueueDB = reqQueueDBInit()
 	BossNickDB = bossNicksDBInit()
 	BossDB = bossDBInit()
+	WebhookClient = webhookClientInit()
 
 	helixClient, err := helixInit(clientId, clientSecret, accessToken)
 	if err != nil {
@@ -92,6 +99,8 @@ func main() {
 
 	// Listener For StreamDeck Events
 	go startStreamDeckListener()
+
+	go startBossQueueListener()
 
 	// TODO: Should move the overlay/browser stuff to this package
 	// mostly so I don't have to run multiple separate go programs
@@ -160,4 +169,22 @@ func isCommand(message twitch.PrivateMessage) (ret bool, err error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func run(ctx context.Context) error {
+	listener, err := ngrok.Listen(ctx,
+		config.HTTPEndpoint(),
+		ngrok.WithAuthtokenFromEnv(),
+	)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Ingress established at: %s\n", listener.URL())
+
+	return http.Serve(listener, http.HandlerFunc(handler))
+}
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Hello from ngrok-go!")
 }

@@ -48,7 +48,7 @@ func startStreamDeckListener() {
 func startSecureTwitchListeners() {
 	http.HandleFunc("/eventsub", eventSubHandler)
 	fmt.Println("Starting server on port 443")
-    err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
+    err := http.ListenAndServeTLS(":443", "certs/cert.pem", "certs/key.pem", nil)
     if err != nil {
         panic(err)
     }
@@ -78,7 +78,7 @@ func createEventSubSubscriptions(client *helix.Client) {
 		},
 		Transport: helix.EventSubTransport{
 			Method: "webhook",
-			Callback: "https://localhost:443",
+			Callback: "https://possum-subtle-quagga.ngrok-free.app/eventsub",
 			Secret: os.Getenv("EVENTSUB_SECRET"),
 		},
 	})
@@ -97,7 +97,7 @@ func createEventSubSubscriptions(client *helix.Client) {
 		},
 		Transport: helix.EventSubTransport{
 			Method: "webhook",
-			Callback: "https://localhost:443",
+			Callback: "https://possum-subtle-quagga.ngrok-free.app/eventsub",
 			Secret: os.Getenv("EVENTSUB_SECRET"),
 		},
 	})
@@ -116,7 +116,7 @@ func createEventSubSubscriptions(client *helix.Client) {
 		},
 		Transport: helix.EventSubTransport{
 			Method: "webhook",
-			Callback: "https://localhost:443",
+			Callback: "https://possum-subtle-quagga.ngrok-free.app/eventsub",
 			Secret: os.Getenv("EVENTSUB_SECRET"),
 		},
 	})
@@ -135,7 +135,7 @@ func createEventSubSubscriptions(client *helix.Client) {
 		},
 		Transport: helix.EventSubTransport{
 			Method: "webhook",
-			Callback: "https://localhost:443",
+			Callback: "https://possum-subtle-quagga.ngrok-free.app/eventsub",
 			Secret: os.Getenv("EVENTSUB_SECRET"),
 		},
 	})
@@ -157,6 +157,7 @@ func deleteEventSubSubscription(client *helix.Client, subId string) {
 }
 
 func eventSubHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Got some sort of eventsub thing\n")
     body, err := io.ReadAll(r.Body)
     if err != nil {
         fmt.Printf("%s\n",err)
@@ -190,7 +191,16 @@ func eventSubHandler(w http.ResponseWriter, r *http.Request) {
 		err = json.NewDecoder(bytes.NewReader(vals.Event)).Decode(&followEvent)
 		if err != nil {fmt.Printf("")}
 		fmt.Printf("Got Follow event!\n")
-		fmt.Printf("%s follows %s\n", followEvent.UserName, followEvent.BroadcasterUserName)
+		fmt.Printf("%s followed the channel!\n", followEvent.UserName)
+		idInt, err := strconv.Atoi(followEvent.UserID)
+		if err != nil {
+			panic(err)
+		}
+		respCode, respMessage := writePointGainEvent(idInt, followEvent.UserName,25)
+		if respCode != 0 || respMessage != "" {
+			fmt.Printf("")
+		}
+		sendPointGainWebook(followEvent.UserName, 25, "following")
 	case helix.EventSubTypeChannelSubscription:
 		var subEvent helix.EventSubChannelSubscribeEvent
 		err = json.NewDecoder(bytes.NewReader(vals.Event)).Decode(&subEvent)
@@ -201,27 +211,78 @@ func eventSubHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		respCode, respMessage, exists := doesUserExist(idInt)
+		respCode, respMessage := writePointGainEvent(idInt, subEvent.UserName,500)
 		if respCode != 0 || respMessage != "" {
 			fmt.Printf("")
 		}
-		fmt.Printf("Does user exist? %t\n", exists)
-		respCode, respMessage = writePointGainEvent(idInt, 100)
-		if respCode != 0 || respMessage != "" {
-			fmt.Printf("")
+		if subEvent.IsGift {
+			// also give gifter points
+			var giftEvent helix.EventSubChannelSubscriptionGiftEvent 
+			err = json.NewDecoder(bytes.NewReader(vals.Event)).Decode(&giftEvent)
+			if !giftEvent.IsAnonymous {
+					idInt, err := strconv.Atoi(subEvent.UserID)
+				if err != nil {
+					panic(err)
+				}
+				respCode, respMessage := writePointGainEvent(idInt, giftEvent.UserName, 500 * giftEvent.Total)
+				if respCode != 0 || respMessage != "" {
+					fmt.Printf("")
+				}
+			}
 		}
+		sendPointGainWebook(subEvent.UserName, 500, "subbing/gifting")
 	case helix.EventSubTypeChannelCheer:
 		var cheerEvent helix.EventSubChannelCheerEvent
 		err = json.NewDecoder(bytes.NewReader(vals.Event)).Decode(&cheerEvent)
 		if err != nil {fmt.Printf("")}
 		fmt.Printf("Got Cheer event!\n")
-		fmt.Printf("%s gave bits to %s in amount %d!\n", cheerEvent.UserName, cheerEvent.BroadcasterUserName, cheerEvent.Bits)
+		fmt.Printf("%s gave %d bits!\n", cheerEvent.UserName, cheerEvent.Bits)
+		idInt, err := strconv.Atoi(cheerEvent.UserID)
+			if err != nil {
+				panic(err)
+			}
+			respCode, respMessage := writePointGainEvent(idInt, cheerEvent.UserName, cheerEvent.Bits)
+			if respCode != 0 || respMessage != "" {
+				fmt.Printf("")
+			}
+			sendPointGainWebook(cheerEvent.UserName, cheerEvent.Bits, "cheering")
 	case helix.EventSubTypeChannelPointsCustomRewardRedemptionAdd:
 		var pointsEvent helix.EventSubChannelPointsCustomRewardRedemptionEvent 
 		err = json.NewDecoder(bytes.NewReader(vals.Event)).Decode(&pointsEvent)
 		if err != nil {fmt.Printf("")}
 		fmt.Printf("Got channel point event!\n")
 		fmt.Printf("%s redeemed %d points for %s!\n", pointsEvent.UserName, pointsEvent.Reward.Cost, pointsEvent.Reward.Title)
+		if(pointsEvent.Reward.Title == "+25 Boss Points") {
+			idInt, err := strconv.Atoi(pointsEvent.UserID)
+			if err != nil {
+				panic(err)
+			}
+			respCode, respMessage := writePointGainEvent(idInt, pointsEvent.UserName, 25)
+			if respCode != 0 || respMessage != "" {
+				fmt.Printf("")
+			}
+			sendPointGainWebook(pointsEvent.UserName, 25, "redeeming points")
+		} else if(pointsEvent.Reward.Title == "+100 Boss Points") {
+			idInt, err := strconv.Atoi(pointsEvent.UserID)
+			if err != nil {
+				panic(err)
+			}
+			respCode, respMessage := writePointGainEvent(idInt, pointsEvent.UserName, 100)
+			if respCode != 0 || respMessage != "" {
+				fmt.Printf("")
+			}
+			sendPointGainWebook(pointsEvent.UserName, 100, "redeeming points")
+		} else if(pointsEvent.Reward.Title == "+200 Boss Points") {
+			idInt, err := strconv.Atoi(pointsEvent.UserID)
+			if err != nil {
+				panic(err)
+			}
+			respCode, respMessage := writePointGainEvent(idInt, pointsEvent.UserName, 200)
+			if respCode != 0 || respMessage != "" {
+				fmt.Printf("")
+			}
+			sendPointGainWebook(pointsEvent.UserName, 200, "redeeming points")
+		}
 	}
 
     //fmt.Printf("got follow webhook: %s follows %s\n", followEvent.UserName, followEvent.BroadcasterUserName)
@@ -242,4 +303,27 @@ func streamDeckWebhookHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	}
+}
+
+func startBossQueueListener() {
+	http.HandleFunc("/oldest-requests", getOldestRequestsHandler())
+    http.ListenAndServe(":8082", nil)
+}
+
+
+
+func getOldestRequestsHandler() http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        var requests []UserBossRequest
+
+        // Query the 5 oldest entries ordered by CreatedAt
+        err := ReqQueueDB.Order("created_at ASC").Limit(5).Find(&requests).Error
+        if err != nil {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+            return
+        }
+
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(requests)
+    }
 }

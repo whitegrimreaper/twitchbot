@@ -95,6 +95,17 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 			return "Not authorized for this request!", nil
 		}
 		ret = executeBossRemoval(bossName, numKills)
+	case commandName == command_checkCost:
+		if len(args) < 2 {
+			ret = "Incorrect number of args! Usage: !checkcost <boss name>"
+			return ret, nil
+		}
+		bossName := strings.Join(args[1 : len(args)], " ")
+		ret = getBossCost(bossName)
+	case commandName == command_howEarn:
+		ret = "Earn points by Following, Subbing, Bits, Donations, or Channel Point Redemptions!"
+	case commandName == command_bossPoints:
+		ret = "Earn points by Following, Subbing, Bits, Donations, or Channel Point Redemptions!"
 	}
 	return ret, nil
 }

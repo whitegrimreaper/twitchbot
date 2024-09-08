@@ -124,5 +124,39 @@ func executeBossRemoval(bossName string, numKills  int)(response string) {
 		response = respMessage
 		return
 	}
+	response = "Success!"
+	return
+}
+
+func handleCheckKills(userId int)(response string) {
+	respCode, respMessage, entries := findUserQueueEntries(userId)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = respMessage
+		return
+	}
+	str, err := getListOfBosses(entries);
+	if err != nil {
+		response = "Oops I errored again"
+	}
+	response = "You currently have " + str + " left!"
+	return
+}
+
+func getBossCost(bossName string)(response string) {
+	respCode, respMessage, trueName := getBossTrueName(bossName)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = "Make sure to give a known name for the boss!"
+		return
+	}
+
+	respCode, respMessage, bossInfo := getBossWithName(trueName)
+	if respCode != 0 || respMessage != "" {
+		fmt.Printf("%s\n", respMessage)
+		response = "Error: boss name not known!"
+		return
+	}
+	response = bossName + " costs " + strconv.Itoa(bossInfo.BossCost) + " per kill"
 	return
 }

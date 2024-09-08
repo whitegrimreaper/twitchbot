@@ -15,8 +15,9 @@ import (
 type UserPoints struct {
 	// ignoring this until i get a cleaner model with a better init func
 	//Username string
-	UserID int     				`gorm:"primaryKey"`
-	Points int
+	UserID    int     				`gorm:"primaryKey"`
+	UserName  string
+	Points 	  int
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -100,7 +101,7 @@ type BossNicknames struct {
 }
 
 func pointsDBInit()(db *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open("points_test.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("dbs/prod/points.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -110,7 +111,7 @@ func pointsDBInit()(db *gorm.DB) {
 }
 
 func bossDBInit()(db *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open("boss_test.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("dbs/boss_test.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -120,7 +121,7 @@ func bossDBInit()(db *gorm.DB) {
 }
 
 func reqQueueDBInit()(db *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open("request_queue_test.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("dbs/request_queue_test.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -130,7 +131,7 @@ func reqQueueDBInit()(db *gorm.DB) {
 }
 
 func bossNicksDBInit()(db *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open("boss_nicks_test.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("dbs/boss_nicks_test.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -154,9 +155,9 @@ func doesUserExist(targetUser int)(respCode int, respMessage string, exists bool
 	return 0, "", true
 }
 
-func writePointGainEvent(targetUser int, pointAmount int)(respCode int, respMessage string) {
+func writePointGainEvent(targetUser int, targetUserName string, pointAmount int)(respCode int, respMessage string) {
 	var user UserPoints
-	err := PointsDB.Where(UserPoints{UserID: targetUser}).FirstOrCreate(&user).Error
+	err := PointsDB.Where(UserPoints{UserID: targetUser, UserName: targetUserName}).FirstOrCreate(&user).Error
 	if err != nil {
 		fmt.Printf("Error in init %+v\n", err)
 	}
@@ -234,10 +235,21 @@ func addBossKillsMain(targetUser int, bossId int, bossKills int)(respCode int, r
 	if err != nil {
 		return -1, err.Error()
 	}
-	err = BossDB.Model(&boss).Where("boss_id = ?", bossId).
+	// adding bosses
+	if bossKills >= 1 {
+		err = BossDB.Model(&boss).Where("boss_id = ?", bossId).
 		Update("boss_kills_left", boss.BossKillsLeft + bossKills).Error
+		if err != nil {
+			return -1, err.Error()
+		}
+	} else if bossKills < 1 {
+		// for removing kills (i.e. doing kills)
+		err = BossDB.Model(&boss).Where("boss_id = ?", bossId).
+		Update("boss_kills_left", boss.BossKillsLeft + bossKills).
+		Update("boss_kills_done", boss.BossKillsDone + 1).Error
 	if err != nil {
 		return -1, err.Error()
+	}
 	}
 	return 0, ""
 }
@@ -321,7 +333,7 @@ func getBossTrueName(inputString string)(respCode int, respMessage string, name 
 	_, _, bosses := getBossList()
 	for _, boss := range bosses {
 		_, _, nicks := getBossNicks(boss.BossID)
-		if(ContainsStringCaseInsensitive(nicks.BossNicks, inputString) || inputString == boss.BossName) {
+		if(ContainsStringCaseInsensitive(nicks.BossNicks, inputString) || strings.ToLower(inputString) == strings.ToLower(boss.BossName)) {
 			return 0, "", boss.BossName
 		}
 	}

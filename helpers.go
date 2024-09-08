@@ -3,7 +3,9 @@ package main
 import(
 	"fmt"
 	"os"
+	"errors"
 	"strings"
+	"strconv"
 	helix "github.com/nicklaw5/helix/v2"
 )
 
@@ -49,11 +51,25 @@ func checkRequestIsValid(bossInfo BossEntry, currPoints int, numKills int)(valid
 
 // yoinked from fastbill/go-tiny-helpers because the import didn't work 
 // (prob a golang version thing)
+// also added the strings.Trim because of the way my storage works
 func ContainsStringCaseInsensitive(list []string, value string) bool {
 	for _, item := range list {
-		if strings.EqualFold(item, value) {
+		if strings.EqualFold(strings.Trim(item, " "), value) {
 			return true
 		}
 	}
 	return false
+}
+
+func getListOfBosses(entries  []UserBossRequest)(resp string, err error) {
+	for _, entry := range entries {
+		code, mess, nicks := getBossNicks(entry.BossID)
+		if code != 0 || mess != "" {
+			err = errors.New("oops")
+			return
+		}
+		resp = resp + " " + strconv.Itoa(entry.BossKillsLeft) +
+		" kills left " + nicks.BossName
+	}
+	return
 }
