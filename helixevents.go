@@ -67,7 +67,7 @@ func handleTwitchCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func createEventSubSubscriptions(client *helix.Client) {
-	fmt.Printf("\n=====================================================\nCREATING EVENTSUB SUBSCRIPTIONS\n======================================================\n");
+	fmt.Printf("\n================================================\nCREATING EVENTSUB SUBSCRIPTIONS\n================================================\n");
 	fmt.Printf("Creating follow subscription...\n")
 	resp, err := client.CreateEventSubSubscription(&helix.EventSubSubscription{
 		Type: helix.EventSubTypeChannelFollow,
@@ -144,10 +144,10 @@ func createEventSubSubscriptions(client *helix.Client) {
 	}
 	printThingsFromEventSubResp(resp)
 
-	fmt.Printf("=====================================================\nDONE WITH EVENTSUB SUBSCRIPTIONS\n======================================================\n");
+	fmt.Printf("================================================\nDONE WITH EVENTSUB SUBSCRIPTIONS\n================================================\n");
 }
 
-// Used for deleting all ESS's because currently I don't handle them well
+// Used for deleting all ESS's if we need to refresh
 func deleteEventSubSubscription(client *helix.Client, subId string) {
 	resp, err := client.RemoveEventSubSubscription(subId)
 	if err != nil {
