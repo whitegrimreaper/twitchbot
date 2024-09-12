@@ -61,16 +61,17 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("Current number of eventsub subs: %d :)\n\n",eventSubResp.Data.Total)
-	//fmt.Printf("Eventsub data %+v\n\n", eventSubResp.Data.EventSubSubscriptions[0])
-	// Currently deletes a bunch of eventsubs, use when number of subs passes like 20
-	//for _, sub := range eventSubResp.Data.EventSubSubscriptions {
-	//	deleteEventSubSubscription(helixClient, sub.ID)
-	//}
-
-	// Currently, the event subs aren't actually active because the listener doesn't match the
-	// current port
-	// TODO: Get HTTPS working and start listening on port 443
-	createEventSubSubscriptions(helixClient)
+	if eventSubResp.Data.Total > 4 {
+		// if we have more than 4, delete em all and refresh
+		for _, sub := range eventSubResp.Data.EventSubSubscriptions {
+			deleteEventSubSubscription(helixClient, sub.ID)
+		}
+		createEventSubSubscriptions(helixClient)
+	} else if eventSubResp.Data.Total > 4 {
+		// if less than 4, same idea
+		// if 1-3 already exist, a repeat call should just do nothing
+		createEventSubSubscriptions(helixClient)
+	}
 
 	resp, err := helixClient.GetUsers(&helix.UsersParams{
 		Logins: []string{"whitegrimreaper_"},
@@ -92,14 +93,12 @@ func main() {
 
 	// TODO currently I create new listeners every time the bot is run, so I'm at 91 subscriptions (updating this every time i see)
 	// should really remove them here
-
-	//go startTwitchEventListener()
 	go startTwitchListeners()
-	//go startSecureTwitchListeners()
 
 	// Listener For StreamDeck Events
 	go startStreamDeckListener()
 
+	// Listener for queue visual
 	go startBossQueueListener()
 
 	// TODO: Should move the overlay/browser stuff to this package
