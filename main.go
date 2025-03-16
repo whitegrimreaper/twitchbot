@@ -67,7 +67,7 @@ func main() {
 			deleteEventSubSubscription(helixClient, sub.ID)
 		}
 		createEventSubSubscriptions(helixClient)
-	} else if eventSubResp.Data.Total > 4 {
+	} else if eventSubResp.Data.Total < 4 {
 		// if less than 4, same idea
 		// if 1-3 already exist, a repeat call should just do nothing
 		createEventSubSubscriptions(helixClient)

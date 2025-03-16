@@ -155,6 +155,7 @@ func doesUserExist(targetUser int)(respCode int, respMessage string, exists bool
 	return 0, "", true
 }
 
+// TODO: Fix case when user changes username
 func writePointGainEvent(targetUser int, targetUserName string, pointAmount int)(respCode int, respMessage string) {
 	var user UserPoints
 	err := PointsDB.Where(UserPoints{UserID: targetUser, UserName: targetUserName}).FirstOrCreate(&user).Error
