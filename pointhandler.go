@@ -139,7 +139,7 @@ func handleCheckKills(userId int)(response string) {
 	if err != nil {
 		response = "Oops I errored again"
 	}
-	response = "You currently have " + str + " left!"
+	response = "You currently have" + str
 	return
 }
 

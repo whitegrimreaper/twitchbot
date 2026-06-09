@@ -62,14 +62,19 @@ func ContainsStringCaseInsensitive(list []string, value string) bool {
 }
 
 func getListOfBosses(entries  []UserBossRequest)(resp string, err error) {
-	for _, entry := range entries {
+	for idx, entry := range entries {
 		code, mess, nicks := getBossNicks(entry.BossID)
 		if code != 0 || mess != "" {
 			err = errors.New("oops")
 			return
 		}
-		resp = resp + " " + strconv.Itoa(entry.BossKillsLeft) +
-		" kills left " + nicks.BossName
+		if (idx > 0) {
+			resp = resp + ", " + strconv.Itoa(entry.BossKillsLeft) +
+			" kills for " + nicks.BossName
+		} else {
+			resp = resp + " " + strconv.Itoa(entry.BossKillsLeft) +
+		" kills for " + nicks.BossName
+		}
 	}
 	return
 }
