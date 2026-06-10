@@ -10,10 +10,8 @@ import (
 )
 
 func main() {
-	envPath := ".env"
-
 	if err := godotenv.Load(envPath); err != nil {
-		fmt.Printf("Could not load .env file: %v\n", err)
+		fmt.Printf("No .env file found\n")
 		os.Exit(1)
 	}
 
@@ -21,15 +19,7 @@ func main() {
 	clientSecret := os.Getenv("APP_CLIENT_SECRET")
 	refreshToken := os.Getenv("AUTH_TOKEN_REFRESH")
 
-	if clientID == "" || clientSecret == "" {
-		fmt.Println("APP_CLIENT_ID and APP_CLIENT_SECRET must be set in .env")
-		os.Exit(1)
-	}
-	if refreshToken == "" {
-		fmt.Println("AUTH_TOKEN_REFRESH is not set in .env")
-		fmt.Println("Add a line like: AUTH_TOKEN_REFRESH=<your refresh token>")
-		os.Exit(1)
-	}
+	validateEnvVars([]string{clientID, clientSecret, refreshToken})
 
 	fmt.Println("Requesting new token from Twitch...")
 
