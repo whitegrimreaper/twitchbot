@@ -100,8 +100,14 @@ type BossNicknames struct {
 	UpdatedAt time.Time
 }
 
-func pointsDBInit()(db *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open("dbs/prod/points.db"), &gorm.Config{})
+func pointsDBInit(region string)(db *gorm.DB) {
+	var dbPath string
+	if region == "test" {
+		dbPath = "dbs/test/points.db"
+	} else {
+		dbPath = "dbs/prod/points.db"
+	}
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -111,7 +117,7 @@ func pointsDBInit()(db *gorm.DB) {
 }
 
 func bossDBInit()(db *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open("dbs/boss_test.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("dbs/boss_info.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -120,8 +126,14 @@ func bossDBInit()(db *gorm.DB) {
 	return db
 }
 
-func reqQueueDBInit()(db *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open("dbs/request_queue_test.db"), &gorm.Config{})
+func reqQueueDBInit(region string)(db *gorm.DB) {
+	var dbPath string
+	if region == "test" {
+		dbPath = "dbs/test/request_queue.db"
+	} else {
+		dbPath = "dbs/prod/request_queue.db"
+	}
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
