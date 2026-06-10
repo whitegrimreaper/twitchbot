@@ -5,9 +5,7 @@ import (
 	"fmt"
 	//"time"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"net/http"
 
 	"golang.ngrok.com/ngrok"
@@ -41,8 +39,17 @@ func main() {
 	validateEnvVars([]string{authToken, clientId, clientSecret, accessToken})
 	fmt.Printf("AUTH_TOKEN is set to %s\n", authToken)
 
-	PointsDB = pointsDBInit()
-	ReqQueueDB = reqQueueDBInit()
+	region := "prod" // default to 'prod'
+
+	// this makes it easy to fuck with testing stuff
+	if len(os.Args) > 1 {
+		if os.Args[1] == "test" {
+			region = "test"
+		}
+	}
+
+	PointsDB = pointsDBInit(region)
+	ReqQueueDB = reqQueueDBInit(region)
 	BossNickDB = bossNicksDBInit()
 	BossDB = bossDBInit()
 	WebhookClient = webhookClientInit()
@@ -109,9 +116,32 @@ func main() {
 	botUsername := "whitegrimbot"
 	channel := "whitegrimreaper_"
 
-	// Create a new Twitch IRC client
+	// Connect to Twitch IRC, refresh token if auth fails
 	fmt.Printf("Initializing Bot\n")
-	client := twitch.NewClient(botUsername, authToken)
+	conErr := connectIRC(botUsername, channel, authToken)
+	if conErr != nil {
+		fmt.Printf("Error connecting to Twitch IRC: %v\n", conErr)
+		fmt.Printf("Attempting token refresh...\n")
+
+		newToken, refreshErr := refreshIRCToken(".env")
+		if refreshErr != nil {
+			fmt.Printf("Token refresh failed: %v\n", refreshErr)
+			return
+		}
+
+		fmt.Printf("Retrying connection with refreshed token...\n")
+		conErr = connectIRC(botUsername, channel, newToken)
+		if conErr != nil {
+			fmt.Printf("Connection failed after token refresh: %v\n", conErr)
+			return
+		}
+	}
+	fmt.Printf("Disconnected from Twitch IRC\n")
+}
+
+// slightly better way of doing things
+func connectIRC(botUsername, channel, token string) error {
+	client := twitch.NewClient(botUsername, token)
 	client.Join(channel)
 
 	// Event handler for incoming messages
@@ -133,25 +163,7 @@ func main() {
 		}
 	})
 
-	// Connect to Twitch IRC
-	conErr := client.Connect()
-	// always hangs here, never gets to the following code
-	// i think client.Connect() should be called in an asynch manner from a
-	// separate goroutine but that's a future improvement since we don't care atm
-	if conErr != nil {
-		fmt.Printf("Error connecting to Twitch IRC: %v\n", err)
-		return
-	}
-	fmt.Printf("Connected to Twitch IRC\n")
-
-	// Wait for termination signal (Ctrl+C)
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	<-sig
-
-	// Disconnect from Twitch IRC
-	client.Disconnect()
-	fmt.Printf("Disconnected from Twitch IRC\n")
+	return client.Connect()
 }
 
 func extractArgs(message twitch.PrivateMessage) (args []string, err error) {
