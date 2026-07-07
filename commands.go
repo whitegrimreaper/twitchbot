@@ -67,8 +67,7 @@ func handleCommand(args []string, message twitch.PrivateMessage) (string, error)
 		}
 		ret = handleCheckKills(userID)
 	case commandName == command_help:
-		ret = "Help is on the way! (help command is currently under construction)"
-		// call separate "handle_help" function or smth
+		ret = plsHelp(args)
 	case commandName == command_removeKills:
 		if len(args) < 3 {
 			ret = "Incorrect number of args! Usage: !addKills <boss name> <# of kills>"
