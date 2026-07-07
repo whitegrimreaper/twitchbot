@@ -14,15 +14,17 @@ Using Golang because I'm a back-end engineer and as such I hate JS as much as it
  - !pigeon
     - Insults pigeonmob
  - !help
-    - dummy help command, provides no help, just like the uncaring universe
+    - now actually helps! run !help or !help <commandName>
  - !check
-    - Checks your current points. There is no way to get them yet because I haven't fully connected the twitch event webhook
- - !checkCost
-    - Checks the point cost of each kill for a specific boss 
- - !addKills
-    - Adds a number of boss kills for a specific boss to the queue, if the user has enough points
+    - checks your current points
+ - !checkCost <boss name>
+    - checks the point cost per kill for a specific boss
+ - !addKills <boss name> <# of kills>
+    - spends your points to add kills for a specific boss to the queue
  - !checkKills
-    - Checks if the calling user's kills have been done yet 
+    - shows how many of your kills are still left in the queue
+ - !howToEarn
+    - explains how to earn points
 
 ## Planned functionality:
  - integration with ?? API to track donations
